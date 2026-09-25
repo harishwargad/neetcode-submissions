@@ -1,0 +1,23 @@
+name: Sync LeetCode Solutions
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * *" # Runs daily automatically
+
+jobs:
+  build:
+    name: Sync LeetCode
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Sync LeetCode Solutions to LeetCode Folder
+        uses: alfaarghya/alfa-leetcode-sync@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          leetcode-session: ${{ secrets.LEETCODE_SESSION }}
+          leetcode-csrf-token: ${{ secrets.CSRFTOKEN }}
+          user-name: harishwargad
+          target-folder: 'LeetCode'
