@@ -13,11 +13,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Sync LeetCode Solutions to LeetCode Folder
+      - name: Sync LeetCode Solutions
         uses: joshcai/leetcode-sync@v1.7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          leetcode-session: ${{ secrets.LEETCODE_SESSION }}
+          github-token: ${{ github.token }}
           leetcode-csrf-token: ${{ secrets.CSRFTOKEN }}
-          user-name: harishwargad
-          target-folder: 'LeetCode'
+          leetcode-session: ${{ secrets.LEETCODE_SESSION }}
+          destination-folder: 'LeetCode'
