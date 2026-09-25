@@ -61,13 +61,14 @@ jobs:
           }
           
           response = requests.post("https://leetcode.com/graphql", json=payload, headers=headers)
-          data = response.json()
+          print("Status Code:", response.status_code)
+          print("Raw Response Text:", response.text[:500]) # Print first 500 chars for debugging
           
           try:
+              data = response.json()
               submissions = data["data"]["submissionList"]["submissions"]
-          except (TypeError, KeyError):
-              print("ERROR: Could not fetch submissions. Your LEETCODE_SESSION cookie has likely expired. Please refresh it from your browser.")
-              print("API Response:", json.dumps(data, indent=2))
+          except Exception as e:
+              print("ERROR parsing JSON:", e)
               exit(1)
               
           os.makedirs("LeetCode", exist_ok=True)
