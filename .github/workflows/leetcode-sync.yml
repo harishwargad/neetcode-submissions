@@ -6,17 +6,92 @@ on:
     - cron: "0 18 * * *" # Runs daily at 6 PM UTC
 
 jobs:
-  build:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sync LeetCode
-        uses: joshcai/leetcode-sync@v1.7
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          leetcode-csrf-token: ${{ secrets.CSRFTOKEN }}
-          leetcode-session: ${{ secrets.LEETCODE_SESSION }}
-          destination-folder: "LeetCode"
-          verbose: true
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run LeetCode Sync
+        env:
+          LEETCODE_SESSION: ${{ secrets.LEETCODE_SESSION }}
+          LEETCODE_CSRF_TOKEN: ${{ secrets.CSRFTOKEN }}
+        run: |
+          python3 -c '
+          import os, requests, json
+          
+          session = os.environ.get("LEETCODE_SESSION")
+          csrf = os.environ.get("LEETCODE_CSRF_TOKEN")
+          
+          headers = {
+              "Cookie": f"LEETCODE_SESSION={session}; csrftoken={csrf};",
+              "Referer": "https://leetcode.com",
+              "Content-Type": "application/json",
+              "x-csrftoken": csrf
+          }
+          
+          query = """
+          query submissionList($offset: Int!, $limit: Int!, $questionSlug: String) {
+            submissionList(offset: $offset, limit: $limit, questionSlug: $questionSlug) {
+              hasNext
+              submissions {
+                id
+                title
+                titleSlug
+                timestamp
+                statusDisplay
+                lang
+                code
+              }
+            }
+          }
+          """
+          
+          payload = {
+              "query": query,
+              "variables": {"offset": 0, "limit": 30, "questionSlug": None}
+          }
+          
+          response = requests.post("https://leetcode.com/graphql", json=payload, headers=headers)
+          data = response.json()
+          
+          try:
+              submissions = data["data"]["submissionList"]["submissions"]
+          except (TypeError, KeyError):
+              print("ERROR: Could not fetch submissions. Your LEETCODE_SESSION cookie has likely expired. Please refresh it from your browser.")
+              print("API Response:", json.dumps(data, indent=2))
+              exit(1)
+              
+          os.makedirs("LeetCode", exist_ok=True)
+          
+          for sub in submissions:
+              if sub["statusDisplay"] == "Accepted":
+                  title_slug = sub["titleSlug"]
+                  lang = sub["lang"]
+                  code = sub["code"]
+                  
+                  ext_map = {"python3": "py", "python": "py", "cpp": "cpp", "java": "java", "javascript": "js", "c": "c"}
+                  ext = ext_map.get(lang, "txt")
+                  
+                  folder_path = f"LeetCode/{title_slug}"
+                  os.makedirs(folder_path, exist_ok=True)
+                  
+                  file_path = f"{folder_path}/solution.{ext}"
+                  with open(file_path, "w", encoding="utf-8") as f:
+                      f.write(code)
+          print("Sync completed successfully!")
+          '
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Sync LeetCode accepted solutions"
+          branch: main
