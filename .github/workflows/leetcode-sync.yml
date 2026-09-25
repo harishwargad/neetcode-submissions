@@ -1,31 +1,24 @@
-name: Sync LeetCode Solutions
+name: Sync LeetCode
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 18 * * *"
+    - cron: "0 18 * * *" # Runs daily at 6 PM UTC
 
 jobs:
   build:
-    name: Sync LeetCode
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Sync LeetCode
+        uses: alfaarghya/alfa-leetcode-sync@v2
         with:
-          python-version: '3.10'
-
-      - name: Run LeetCode Sync Script
-        env:
-          LEETCODE_SESSION: ${{ secrets.LEETCODE_SESSION }}
-          LEETCODE_CSRF_TOKEN: ${{ secrets.CSRFTOKEN }}
-        run: python scripts/sync_leetcode.py
-
-      - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Sync LeetCode accepted solutions"
-          branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          leetcode-session: ${{ secrets.LEETCODE_SESSION }}
+          leetcode-csrf-token: ${{ secrets.CSRFTOKEN }}
+          user-name: "harishwargad"
+          target-folder: "LeetCode"
