@@ -1,0 +1,33 @@
+name: Sync LeetCode Python
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * *" # Runs daily automatically
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+            python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Run Sync Script
+        env:
+          LEETCODE_SESSION: ${{ secrets.LEETCODE_SESSION }}
+          LEETCODE_CSRF_TOKEN: ${{ secrets.CSRFTOKEN }}
+        run: python scripts/sync_leetcode.py
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Sync LeetCode solutions [skip ci]"
+          branch: main
